@@ -1,0 +1,21 @@
+\set QUIET 1
+
+-- print null as "[null]" in output. Its useful while debugging since empty string & null show up as same in output
+\pset null '[null]'
+
+-- autocomplete words are in upper case
+\set COMP_KEYWORD_CASE upper
+
+-- print time taken by query for execution
+\timing on
+
+\set HISTSIZE 2000
+
+-- switch to expanded output depending on output length
+\x auto
+
+\set VERBOSITY verbose
+
+\set HISTCONTROL ignoredups
+
+\set QUIET 0
