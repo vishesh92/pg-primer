@@ -1,9 +1,32 @@
+# Intro - What is this doc?
 Its hard trying to manage a postgresql database by yourself especially when you have little experience with databases.
+We will discuss
+- a little bit of postgresql internals like storage structure on disk
+- Routine operations?
+- moving around postgres using psql
+- Our monitoring & reporting setup
+- And finally finding out & resolving common issues using
 
-# Beginner
-As a beginner, it helps if you know your way around psql. It helps setting up a directory with commonly used queries, understanding slash commands & a `.psqlrc` file.
 
-# psql tips & tricks
+# A little brief of MVCC and basic architecture/internals of postgres.
+## What is MVCC?
+PostgreSQL is a relational database. To provide concurrent access to the database, MVCC is used. Without this, if someone is writing to database, someone else accesses this data during the same time, he would see missing or inconsistence piece of data. MVCC helps you provide *Isolation* which gurantees concurrent access to data.
+
+## How postgresql implements MVCC?
+https://medium.com/learning-with-diagrams/learning-w-diagrams-handling-contention-with-postgresql-109798b8ad54
+** Create a simple diagram to explain how MVCC basically works in postgres.
+https://www.youtube.com/watch?v=GtQueJe6xRQ
+
+## VACUUM
+Because of how MVCC is implemented, tuples that are updated & deleted in a table are not physically deleted from their table. This results in increase in size of tables if vacuum is not run frequently on that table. To handle this increasing storage, you can run `VACUUM` manually or make sure `autovacuum` is running. `VACUUM` goes through each table and marks the older versions of tuples for deletion. `VACUUM` doesn't free up disk space, but can be reused for future inserts on this table. To free up disk space and completely remove bloat from that table, you can run `VACUUM FULL` but it takes an exclusive lock on that. Its not recommended to run `VACUUM FULL` on a production database.
+
+# psql cheat sheet
+psql is the official CLI shipped with postgresql. Its really important to know how to move around a database and psql is a perfect tool for that.
+
+## List users & roles
+```
+\du
+```
 
 ## List databases & their size
 ```
@@ -81,7 +104,7 @@ A lot of times, while debugging an issue, you need to know the schema of a table
 ```
 
 ## .psqlrc
-
+You can place a .psqlrc file at `~/.psqlrc` to customize psql.
 ```
 \set QUIET 1
 
@@ -104,6 +127,7 @@ A lot of times, while debugging an issue, you need to know the schema of a table
 \set HISTCONTROL ignoredups
 
 \set QUIET 0
+
 ```
 More details here: https://wiki.postgresql.org/wiki/Psqlrc
 
@@ -114,20 +138,20 @@ More details here: https://wiki.postgresql.org/wiki/Psqlrc
 
 It is a little hard to remember all the slash commands when starting out. Use `\?` to get a list of all slash commands in psql even the ones not covered above.
 
+# Monitoring, observability & reporting
+## pgbadger
+Its a tool which parses logs and generates a report from them. You can use this to find out slow queries and fix those by creating indexes or tuning postgresql parameters.
 
-# Intermediate
-Most of the time a database is slow or under heavy utilisation, its always a missing index or someone is running queries in a for loop. Its useful to setup (pgbadger)[https://github.com/darold/pgbadger] to check which queries are taking time. Use `EXPLAIN` to check the query plan and see if an index would help. Most of the time, if  there is a sequential scan on a large table and you will know which table needs an index.
-To learn more about indexes, watch (this)[https://www.youtube.com/watch?v=esHnS6G33ak] video by Bruce Momjian.
+## RDS Performance Insights
+This is a feature of RDS which shows you running queries in real time.
 
+## Grafana dashboard
+- CPU (CPU Credits)
+- Memory
+- Connections
+- Burst Balance & IOPS
 
-# Advanced
-I have seen people double up the postgres instances without even understanding the root problem. Performance tuning: https://www.youtube.com/watch?v=xqTNceHxkIo
-This generally works: https://pgtune.leopard.in.ua
-With time, you will start facing more advanced issues with your database. It helps if you know more about postgresql internals, https://momjian.us/main/presentations/internals.html
-
-autovacuum is a background process which run vacuum on tables to remove bloats. This is an important task and shouldn't be turned off.
-
-# Debugging Issues
+# Identifying common issues using above
 Run [queries/connections_per_user.sql](queries/connections_per_user.sql) and check if `max_running_time` is high for `state` - `active` and `idle in transaction`. There is a problem if:
  - Number of connections or `max_running_time` for queries in `active` or `idle in transaction` state is high. `high` is subjective here and depends on the database size and type of workload. In my experience, number of `active` connections should be less than number of database's cpu cores and `max_running_time` should be less than 1 second.
 
@@ -145,3 +169,11 @@ Run [queries/connections_per_user.sql](queries/connections_per_user.sql) and che
       - increase CPU because the number of queries executed per second is high.
 
 Having queries in `idle in transaction` state can cause a lot of issues in the long run. Because a query is in `idle in transaction` state and that connection holds a lock on a table, `VACUUM` won't run on that table because of which the size of that table will keep on growing.
+
+# Performance Tuning?
+- connection pooling
+Every postgresql connection is a forked process on postgresql. Lots of connections & disconnections can result in increased CPU Utilization of your database. Setting up a connection poolers like pgbouncer can create a lot of impact in performance.
+- indexes?
+One of most common problems which can result in low performance is the missing indexes. Using pgbadger you can identify slow queries and identify tables which are missing indexes. Postgresql provides a variety of indexes (btree, brin, gin, etc.).
+- parameter tuning
+I have seen people vertically scale postgres to without even understand the root cause. Its really important to tune your parameters to gain significant performance benefits. You can generate a default configuration using https://pgtune.leopard.in.ua/.
