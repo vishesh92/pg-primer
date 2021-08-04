@@ -2,10 +2,10 @@
 Its hard trying to manage a postgresql database by yourself especially when you have little experience with databases.
 We will discuss
 - a little bit of postgresql internals like storage structure on disk
-- Routine operations?
+- routine operations?
 - moving around postgres using psql
-- Our monitoring & reporting setup
-- And finally finding out & resolving common issues using
+- our monitoring & reporting setup
+- and finally finding out & resolving common issues using
 
 
 # A little brief of MVCC and basic architecture/internals of postgres.
