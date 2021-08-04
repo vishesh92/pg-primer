@@ -18,9 +18,12 @@ https://medium.com/learning-with-diagrams/learning-w-diagrams-handling-contentio
 https://www.youtube.com/watch?v=GtQueJe6xRQ
 
 ## VACUUM
-Because of how MVCC is implemented, tuples that are updated & deleted in a table are not physically deleted from their table. This results in increase in size of tables if vacuum is not run frequently on that table. To handle this increasing storage, you can run `VACUUM` manually or make sure `autovacuum` is running. `VACUUM` goes through each table and marks the older versions of tuples for deletion. `VACUUM` doesn't free up disk space, but can be reused for future inserts on this table. To free up disk space and completely remove bloat from that table, you can run `VACUUM FULL` but it takes an exclusive lock on that. Its not recommended to run `VACUUM FULL` on a production database.
+Because of how MVCC is implemented, tuples that are updated & deleted in a table are not physically deleted from their table. This results in increase in size of tables if vacuum is not run frequently on that table. To handle this increasing storage, you can run `VACUUM` manually or make sure `autovacuum` is running. `VACUUM` goes through each table and marks the older versions of tuples for deletion. `VACUUM` doesn't free up disk space, but can be reused for future inserts on this table. To free up disk space and completely remove bloat from that table, you can run `VACUUM FULL` but it takes an exclusive lock on the table.
 
-# psql cheat sheet
+> Its not recommended to run `VACUUM FULL` on a production database.
+
+# psql Cheat Sheet
+
 psql is the official CLI shipped with postgresql. Its really important to know how to move around a database and psql is a perfect tool for that.
 
 ## List users & roles
@@ -58,6 +61,7 @@ You can use this to connect to another postgresql host or even another database 
 -- for listing tables with additional info including size
 \dt+
 ```
+
 Similar to databases, pattern search works here as well.
 ```
 \dt+ *abc*
@@ -103,7 +107,7 @@ A lot of times, while debugging an issue, you need to know the schema of a table
 \timing
 ```
 
-## .psqlrc
+## Configure using `.psqlrc`
 You can place a .psqlrc file at `~/.psqlrc` to customize psql.
 ```
 \set QUIET 1
@@ -138,11 +142,14 @@ More details here: https://wiki.postgresql.org/wiki/Psqlrc
 
 It is a little hard to remember all the slash commands when starting out. Use `\?` to get a list of all slash commands in psql even the ones not covered above.
 
-# Monitoring, observability & reporting
-## pgbadger
-Its a tool which parses logs and generates a report from them. You can use this to find out slow queries and fix those by creating indexes or tuning postgresql parameters.
+# Monitoring, Observability & Reporting
 
-## RDS Performance Insights
+## pgbadger
+
+[pgbadger](https://github.com/darold/pgbadger) is a tool which parses logs and generates a report on database usage and workload. You can use this to find out slow queries that need fixing or tune postgresql parameters for your workload.
+
+## Performance Insights in [AWS RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PerfInsights.html)
+
 This is a feature of RDS which shows you running queries in real time.
 
 ## Grafana dashboard
@@ -171,9 +178,7 @@ Run [queries/connections_per_user.sql](queries/connections_per_user.sql) and che
 Having queries in `idle in transaction` state can cause a lot of issues in the long run. Because a query is in `idle in transaction` state and that connection holds a lock on a table, `VACUUM` won't run on that table because of which the size of that table will keep on growing.
 
 # Performance Tuning?
-- connection pooling
-Every postgresql connection is a forked process on postgresql. Lots of connections & disconnections can result in increased CPU Utilization of your database. Setting up a connection poolers like pgbouncer can create a lot of impact in performance.
-- indexes?
-One of most common problems which can result in low performance is the missing indexes. Using pgbadger you can identify slow queries and identify tables which are missing indexes. Postgresql provides a variety of indexes (btree, brin, gin, etc.).
-- parameter tuning
-I have seen people vertically scale postgres to without even understand the root cause. Its really important to tune your parameters to gain significant performance benefits. You can generate a default configuration using https://pgtune.leopard.in.ua/.
+
+* **connection pooling** - every postgresql connection is a forked process on postgres. Lots of connections & disconnections can result in increased CPU utilization of your database. Setting up a connection pooler like pgbouncer can create a lot of impact in performance.
+* **indexes** - one of most common problems which can result in low performance is missing indexes. Using pgbadger you can identify slow queries and identify tables which are missing indexes. Postgresql provides a variety of indexes (btree, brin, gin, etc.).
+- **parameter tuning** - I have seen people vertically scale postgres without attempting to understand bottlenecks causing performance problems. It is really important to tune your parameters for your workloads to gain desired performance. You can generate a default configuration using https://pgtune.leopard.in.ua/. But don't forget to understand more about your workloads and tune accordingly.
