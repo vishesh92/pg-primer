@@ -6,6 +6,7 @@ Slow or poorly performing queries are one of the biggest reasons for outages or 
 When you execute a query, postgres can fetch the results in different ways (sequential scan, index scan, etc.). Postgres generates multiple plans and if feasible, examines each plan depending on postgres's [configuration parameters](https://www.postgresql.org/docs/current/runtime-config-query.html) and table's statistics which are gathered using ANALYZE. The plan which is expected to run the fastest is selected.
 
 ### Additional Resources
+* [An Overview of the Various Scan Methods in PostgreSQL](https://severalnines.com/database-blog/overview-various-scan-methods-postgresql)
 * [Planner Optimizer](https://www.postgresql.org/docs/devel/planner-optimizer.html)
 
 ## `EXPLAIN` vs `EXPLAIN ANALYZE`
@@ -14,7 +15,7 @@ When you execute a query, postgres can fetch the results in different ways (sequ
 > ⚠️ Using `EXPLAIN ANALYZE` with `INSERT`, `UPDATE` or `DELETE` will update your data. To safely try `EXPLAIN ANALYZE` with such queries, you can start a transaction (using `BEGIN`), use `EXPLAIN ANALYZE` and then `ROLLBACK` that transaction.
 
 ## Anatomy of an `EXPLAIN` plan
-This is the query plan for a `SELECT` command on a table:
+Running `EXPLAIN` on a query generates a query plan which is a tree of plan nodes. This is the query plan for a `SELECT` command on a table:
 
 ```sql
 EXPLAIN SELECT * FROM tenk1;
@@ -27,9 +28,9 @@ EXPLAIN SELECT * FROM tenk1;
 In this output,
  * *cost*
    * *estimated startup cost* (0.00) - the time before that node of the plan can begin
-   * *estimated total cost* (483.00) - total time taken assuming that node will be run to completion (actual cost might be low in case of `LIMIT`).
+   * *estimated total cost* (483.00) - total time taken assuming that plan node will be run to completion (actual cost might be low in case of `LIMIT`).
  * *rows* (7001) - estimated number of rows that will be returned by this plan node assuming that node will be run to completion (actual cost might be low in case of `LIMIT`).
- * *width* (244) - estimated average width of rows in bytes
+ * *width* (244) - estimated average width of rows in bytes for this plan node
 
 Cost and rows above are calculated based on postgres's [configuration parameters](https://www.postgresql.org/docs/current/runtime-config-query.html). You can tune these params (cpu_tuple_cost, random_page_cost, etc.) at runtime to test out changes before deploying them.
 
@@ -53,6 +54,9 @@ I generally try to follow these rules to speed up queries:
 ```
 
 Sometimes, the query plan can get really complicated to understand. In cases like this, you can use [pev2](https://explain.dalibo.com/).
+
+### Additional Resources
+* [Using Explain](https://www.postgresql.org/docs/current/using-explain.html)
 
 ## Index Types
 There are different types of indexes avaialble and some might give good performance gains depending on the use-case. By default, postgres uses a btree index.
@@ -79,5 +83,6 @@ If you make a query like:
 
 ### Additional Resources
 * [Index Types](https://www.postgresql.org/docs/current/indexes-types.html)
+* [Get rid of your unused indexes!](https://www.cybertec-postgresql.com/en/get-rid-of-your-unused-indexes/)
 * PostgresOpen 2019 Explain Plans And You: [Talk](https://www.youtube.com/watch?v=OO-CHEXAX4o) | [Slides](https://postgresql.us/events/pgopen2019/sessions/session/695/slides/31/ExplainPlansAndYouPostgresOpen2019.pdf)
 * Explaining the Postgres Query Optimizer - Bruce Momjian: [Talk](https://www.youtube.com/watch?v=svqQzYFBPIo) | [Slides](https://momjian.us/main/writings/pgsql/optimizer.pdf)
