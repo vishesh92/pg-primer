@@ -1,15 +1,19 @@
 # SQL Query Analysis & how to fix them
+
 ## How does postgres decide a query plan?
-When you execute a query, postgres can fetch the same result in different ways (sequential scan, index scan, etc.). Postgres generates multiple plans and if feasible, examines each plan depending on postgres's [configuration parameters](https://www.postgresql.org/docs/current/runtime-config-query.html) and table's statistics which are gathered using ANALYZE. Plan which is expected to run the fastest is selected.
+When you execute a query, postgres can fetch the same result in different ways (sequential scan, index scan, etc.). Postgres generates multiple plans and if feasible, examines each plan depending on postgres's [configuration parameters](https://www.postgresql.org/docs/current/runtime-config-query.html) and table's statistics which are gathered using ANALYZE. The plan which is expected to run the fastest is selected.
 
 ### Additional Resources
 * [Planner Optimizer](https://www.postgresql.org/docs/devel/planner-optimizer.html)
 
 ## `EXPLAIN` vs `EXPLAIN ANALYZE`
-`EXPLAIN` command can be used to see which plan has been decided by postgres to execute query. `EXPLAIN` just shows the plan but doesn't show how much time it actually takes. To know the time taken at each step of the plan, you can use `EXPLAIN ANALYZE`. `EXPLAIN ANALYZE` actually executes the query, so it should be used carefully. Using `EXPLAIN ANALYZE` with `INSERT`, `UPDATE` or `DELETE` will update your data. You can start a transaction (using `BEGIN`), use `EXPLAIN ANALYZE` and then `ROLLBACK` that transaction.
+`EXPLAIN` command can be used to see which plan has been decided by postgres to execute query. `EXPLAIN` just shows the plan but doesn't show how much time it actually takes. To know the time taken at each step of the plan, you can use `EXPLAIN ANALYZE`. `EXPLAIN ANALYZE` actually executes the query, so it should be used carefully.
 
-## Anatomy of an explain plan
+> ⚠️ Using `EXPLAIN ANALYZE` with `INSERT`, `UPDATE` or `DELETE` will update your data. To safely try `EXPLAIN ANALYZE` with such queries, you can start a transaction (using `BEGIN`), use `EXPLAIN ANALYZE` and then `ROLLBACK` that transaction.
+
+## Anatomy of an `EXPLAIN` plan
 This is the query plan for a `SELECT` command on a table:
+
 ```sql
 EXPLAIN SELECT * FROM tenk1;
 
@@ -17,6 +21,7 @@ EXPLAIN SELECT * FROM tenk1;
 ------------------------------------------------------------
  Seq Scan on tenk1  (cost=0.00..483.00 rows=7001 width=244)
 ```
+
 In this output,
  * *cost*
    * *estimated startup cost* (0.00) - the time before that node of the plan can begin
