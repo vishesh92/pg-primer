@@ -1,0 +1,63 @@
+<mxfile host="65bd71144e">
+    <diagram id="sZPlSUHNs4GKtM41t-qI" name="Page-1">
+        <mxGraphModel dx="1004" dy="869" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="100" pageHeight="100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="-280" y="-130" width="960" height="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="cJOZtd-4wLvdw14M4_RI-1" value="" style="endArrow=classic;html=1;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="-90" as="sourcePoint"/>
+                        <mxPoint x="630" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-6" value="T2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" target="cJOZtd-4wLvdw14M4_RI-2" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="170" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cJOZtd-4wLvdw14M4_RI-2" value="&lt;div&gt;UPDATE account&lt;/div&gt;&lt;div&gt;SET balance = balance - 50&lt;/div&gt;&lt;div&gt;WHERE user = 'A';&lt;br&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Courier New;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="70" y="-90" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-7" value="T3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="cJOZtd-4wLvdw14M4_RI-3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="345" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cJOZtd-4wLvdw14M4_RI-3" value="&lt;div&gt;SELECT SUM(balance)&lt;/div&gt;&lt;div&gt;FROM account;&lt;br&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Courier New;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="270" y="40" width="150" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-8" value="T4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" target="cJOZtd-4wLvdw14M4_RI-4" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="520" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cJOZtd-4wLvdw14M4_RI-4" value="&lt;div&gt;UPDATE account&lt;/div&gt;&lt;div&gt;SET balance = balance + 50&lt;/div&gt;&lt;div&gt;WHERE user = 'B';&lt;br&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Courier New;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="420" y="-90" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="cJOZtd-4wLvdw14M4_RI-5" value="&lt;div&gt;User A &lt;i&gt;transfers 50$&lt;/i&gt;&lt;/div&gt;&lt;div&gt;&lt;i&gt;to&lt;/i&gt; user B&lt;i&gt;'s account&lt;/i&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Lucida Console;fontStyle=3" parent="1" vertex="1">
+                    <mxGeometry x="-255" y="-70" width="150" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="cJOZtd-4wLvdw14M4_RI-6" value="&lt;div&gt;Bank Manager checks&lt;/div&gt;&lt;div&gt;the branch's balance&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Lucida Console;fontStyle=3" parent="1" vertex="1">
+                    <mxGeometry x="-260" y="40" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-3" value="T1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" target="0ENL7S6P3rKB2Kh6RvPy-1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-5" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-1" value="&lt;div&gt;SELECT SUM(balance)&lt;/div&gt;&lt;div&gt;FROM account;&lt;br&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Courier New;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="-80" y="40" width="150" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-9" value="Output: 100" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Courier New;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="-60" y="80" width="90" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="0ENL7S6P3rKB2Kh6RvPy-10" value="Output: ???" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fontFamily=Courier New;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="290" y="80" width="90" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
