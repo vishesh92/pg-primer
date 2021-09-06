@@ -8,8 +8,11 @@ We will discuss
 - and finally finding out & resolving common issues using
 
 # Setting up postgres
-You can easily setup postgresql on your local using docker. This setup is fine if you just want to play around with postgres.
-After setting up docker, run this command in your terminal.
+To connect to postgres, you need psql or any other client which supports postgres. You can download psql (part of postgresql-client package) from [here](https://www.postgresql.org/download/) according to your operating system.
+
+If you just want to play around with postgres, you can easily set it up on your local using [docker](https://docker.com/). You can install docker by following its official documentation [here](https://docs.docker.com/engine/install/).
+
+After setting up docker, run this command in your terminal to run a postgres container in background.
 ```bash
 docker run --name postgres-playground -d postgres
 ```
@@ -153,8 +156,15 @@ Having queries in `idle in transaction` state can cause a lot of issues in the l
 
 * **Parameter tuning** - I have seen people vertically scale postgres without attempting to understand bottlenecks causing performance problems. It is really important to tune your parameters for your workloads to gain desired performance. You can generate a default configuration using [PGTune](https://pgtune.leopard.in.ua/). But don't forget to understand more about your workloads and tune accordingly.
 
-# Things to add:
- * json vs jsonb
- * int vs bigint
- * char vs varchar vs text
- * Add installation instructions for psql
+# Common questions while chosing data type
+Postgres offers a lot of data types. While designing schema for a table, its quite useful to know about them and where to use them. These are some of the questions I come across:
+
+## int vs bigint (serial vs bigserial)
+Its better to use int when you know that won't exceed the limit of int. Changing a column from int to bigint can result in a massive downtime because postgres will need to rewrite the entire column.
+
+## json vs jsonb
+json is just like a text column with a json validation whereas in case of jsonb column, data is stored in a binary format. Because of which insert and update operations are a little slower for jsonb as compared to json.
+If data in the column is just going to be logs and are not going to be queried, its better to use a json column. For more details check [this article](https://www.compose.com/articles/faster-operations-with-the-jsonb-data-type-in-postgresql/).
+
+## char vs varchar vs text
+char(n) is fixed length with blanks padded whereas varchar(n) is a variable length string with a limit. Text on other hand has no limits. Most of the time, its better to use text data type. If a check on length is required, you can add a constraint for that on a text column. For more information check postgres documentation [here](https://www.postgresql.org/docs/9.1/datatype-character.html).
