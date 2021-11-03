@@ -1,11 +1,5 @@
 # Intro - What is this doc?
-Its hard trying to manage a postgresql database by yourself especially when you have little experience with databases.
-We will discuss
-- a little bit of postgresql internals like storage structure on disk
-- routine operations?
-- moving around postgres using psql
-- our monitoring & reporting setup
-- and finally finding out & resolving common issues using
+Its hard trying to manage a postgresql database by yourself especially when you have little experience with databases. I started by writing simple queries which were required for analytics. But the systems were also facing other issues which pushed me to delve deeper into postgres. Majority of the issues were quite simple and were there due to lack of a DBA/DBRE. During my journey with postgres, I came across [Accidental DBA](https://github.com/pgexperts/accidentalDBA/). This helped me quite a bit at that time but there were still a few things that I picked up over the years. I wanted to write this document to share what I have learned over the years and make it a little easier for another Accidental DBA to work with postgres. Since I have primarily worked with RDS Postgres (managed postgres service provided by AWS), there might be a few things related to postgres setup missing here.
 
 # Setting up postgres
 To connect to postgres, you need psql or any other client which supports postgres. You can download psql (part of postgresql-client package) from [here](https://www.postgresql.org/download/) according to your operating system.
@@ -25,6 +19,8 @@ Stop and remove the container once you are done
 docker stop postgres-playground
 docker rm postgres-playground
 ```
+
+> Above setup is only for playing around with postgres and is not meant to be used for production use.
 
 # A little brief of MVCC and basic architecture/internals of postgres.
 ## What is MVCC?
@@ -55,7 +51,7 @@ CREATE TABLE tbl (id bigserial primary key, col text);
 ```
 2. Insert two rows and check their physical location
 ```sql
-INSERT INTO tbl(col1) VALUES ('a'), ('b');
+INSERT INTO tbl(col) VALUES ('a'), ('b');
 SELECT ctid, * FROM tbl;
 ```
 3. Delete the row where col value is `a` and check their physical location
@@ -81,9 +77,13 @@ You will notice that physical location has changed again after running vacuum.
 * MVCC Unmasked by Bruce Momjian - [Slides](https://momjian.us/main/writings/pgsql/mvcc.pdf) | [Video](https://www.youtube.com/watch?v=gAE_MSQtqnQ)
 * Postgres, MVCC, and you or, Why COUNT(*) is slow by David Wolever - [Slides](https://speakerdeck.com/wolever/pycon-canada-2017-postgres-mvcc-and-you) | [Video](https://www.youtube.com/watch?v=GtQueJe6xRQ)
 
-# psql
+# psql & Query Optimisation
 
+## psql
 psql is the official CLI shipped with postgresql. Its really important to know how to move around a database and psql is a perfect tool for that. Check this [cheat sheet](./psql-cheat-sheet.md) to get familiar with psql.
+
+## Query Optimisation
+Its really important to fix the slow and poorly written queries. To identify bottlenecks in query executions, `EXPLAIN` & `EXPLAIN ANALYZE` are quite useful. Check [this](./sql-query-analysis.md) to get an idea of how queries get executed. After identifying the issues, you can create an index, rewrite query or provision more resources depending on the use case.
 
 # Monitoring, Observability & Reporting
 
@@ -100,7 +100,7 @@ There are a lot of metrics you might want to track, but these are one of the mos
 - CPU
 - Memory
 - Connections
-- Burst Balance & IOPS
+- IOPS
 
 ## Performance Insights in [AWS RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PerfInsights.html)
 
@@ -156,6 +156,8 @@ Having queries in `idle in transaction` state can cause a lot of issues in the l
 
 * **Parameter tuning** - I have seen people vertically scale postgres without attempting to understand bottlenecks causing performance problems. It is really important to tune your parameters for your workloads to gain desired performance. You can generate a default configuration using [PGTune](https://pgtune.leopard.in.ua/). But don't forget to understand more about your workloads and tune accordingly.
 
+* **Partitioning** - Partitioning can help you achieve easier archiving and better performance of large tables. You can partition tables either using declarative partitioning or inheritance based partitioning. Simple log or event tables are generally good candidates for partitioning. For more details, check [Postgresql documentation](https://www.postgresql.org/docs/current/ddl-partitioning.html)
+
 # Common questions while chosing data type
 Postgres offers a lot of data types. While designing schema for a table, its quite useful to know about them and where to use them. These are some of the questions I come across:
 
@@ -168,3 +170,10 @@ If data in the column is just going to be logs and are not going to be queried, 
 
 ## char vs varchar vs text
 char(n) is fixed length with blanks padded whereas varchar(n) is a variable length string with a limit. Text on other hand has no limits. Most of the time, its better to use text data type. If a check on length is required, you can add a constraint for that on a text column. For more information check postgres documentation [here](https://www.postgresql.org/docs/9.1/datatype-character.html).
+
+# Additional Tips
+## Backups
+Always keep backups enabled and test them regularly. Gitlab faced an issue with backups in the past which resulted in a data loss. You can check their postmortem [here](https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/).
+
+## Upgrades
+Minor version upgrades just require a restart where as a major version upgrade will need to update data on disk which can take quite some time. Its recommended to test the upgrade and the application with the newer version before actually doing it in production.
