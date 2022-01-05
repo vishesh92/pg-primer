@@ -1,7 +1,7 @@
 SELECT blocked_locks.pid     AS blocked_pid,
          blocked_activity.usename  AS blocked_user,
          blocking_locks.pid     AS blocking_pid,
-         blocking_activity.usename AS blocking_user
+         blocking_activity.usename AS blocking_user,
          blocked_activity.query    AS blocked_statement,
          blocking_activity.query   AS current_statement_in_blocking_process
    FROM  pg_catalog.pg_locks         blocked_locks
