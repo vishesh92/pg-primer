@@ -1,99 +1,97 @@
 # Intro - What is this doc?
-Its hard trying to manage a postgresql database by yourself especially when you have little experience with databases. I started by writing simple queries which were required for analytics. But the systems were also facing other issues which pushed me to delve deeper into postgres. Majority of the issues were quite simple and were there due to lack of a DBA/DBRE. During my journey with postgres, I came across [Accidental DBA](https://github.com/pgexperts/accidentalDBA/). This helped me quite a bit at that time but there were still a few things that I picked up over the years. I wanted to write this document to share what I have learned over the years and make it a little easier for another Accidental DBA to work with postgres. Since I have primarily worked with RDS Postgres (managed postgres service provided by AWS), there might be a few things related to postgres setup missing here.
+It's hard trying to manage a postgresql database by yourself especially when you have little experience with databases. I started by writing simple queries which were required for analytics. But the systems were also facing other issues which pushed me to delve deeper into postgres. The majority of the issues were quite simple and were there due to the lack of a DBA/DBRE. During my journey with postgres, I came across [Accidental DBA](https://github.com/pgexperts/accidentalDBA/). This helped me quite a bit at that time but there were still a few things that I picked up over the years. I wanted to write this document to share what I have learned over the years and make it a little easier for another Accidental DBA to work with postgres. Since I have primarily worked with RDS Postgres (managed postgres service provided by AWS), there might be a few things related to postgres setup missing here.
 
 # Setting up postgres
 To connect to postgres, you need psql or any other client which supports postgres. You can download psql (part of postgresql-client package) from [here](https://www.postgresql.org/download/) according to your operating system.
 
-If you just want to play around with postgres, you can easily set it up on your local using [docker](https://docker.com/). You can install docker by following its official documentation [here](https://docs.docker.com/engine/install/).
+If you just want to play around with postgres, you can easily set it up on your local using [docker](https://docker.com/). You can install docker by following it's official documentation [here](https://docs.docker.com/engine/install/).
 
-After setting up docker, run this command in your terminal to run a postgres container in background.
+After setting up docker, run this command in your terminal to run a postgres container in the background.
 ```bash
 docker run --name postgres-playground -d postgres
 ```
-You can run this comand connect to postgres once the container is ready.
+You can run this command connect to postgres once the container is ready.
 ```bash
 docker exec -it postgres-playground psql -U postgres postgres
 ```
-Stop and remove the container once you are done
+Stop and remove the container.
 ```bash
 docker stop postgres-playground
 docker rm postgres-playground
 ```
 
-> Above setup is only for playing around with postgres and is not meant to be used for production use.
+> The above setup is only for playing with postgres and is not for production use.
 
-# A little brief of MVCC and basic architecture/internals of postgres.
+# A little brief of MVCC and architecture/internals of postgres.
 ## What is MVCC?
-PostgreSQL provides concurrent access to the database using MVCC. Without this, if someone is writing to database and someone else accesses this data during the same time, they would see missing or inconsistence piece of data. MVCC helps you provide *Isolation* which gurantees concurrent access to data.
+PostgreSQL provides concurrent access to the database using MVCC. Without this, if someone writes a row to a database and someone else accesses the same row simultaneously, they would see missing or inconsistent data.. MVCC helps you provide *Isolation* which guarantees concurrent access to the data.
 
 ![Isolation](./assets/isolation.svg)
 
-Let's assume that a bank has only two users and total balance in bank is 100$. Now, user *A* transfers 50$ to user *B*. At T1, the bank manager would see 100$ as bank balance. At T3, the output would still be 100$ in this case because postgres provides isolation and both the transactions have different view of that table.
+Let's assume that a bank has only two users having 50$ each, the total balance in the bank being 100$. Now, user *A* transfers 50$ to user *B*. At T1, the bank manager would see 100$ as bank balance. At T3, the output would still be 100$ in this case because postgres provides isolation and both the transactions have a different view of that table.
 
-## How postgresql implements MVCC?
-Every table in postgres, has some additional [system columns](https://www.postgresql.org/docs/current/ddl-system-columns.html). *ctid* is one such column which stores the physical location of that row. You can use a query like this to get ctid of a row.
+## How PostgreSQL implements MVCC?
+Every table in postgres has some additional [system columns](https://www.postgresql.org/docs/current/ddl-system-columns.html). *ctid* is one such column that stores the physical location of that row. You can use a query like this to get the ctid of a row.
 ```sql
 SELECT ctid, * FROM <table name> LIMIT 10;
 ```
 ![MVCCImplementation](./assets/mvcc-implementation.svg)
 
-Deleting a row marks updates that row that its not visible for future transactions. Updating a row creates a new copy of the row and update the previous row so that its not visible for future transactions.
+Deleting a row updates the system columns for that row so that it's not visible for future transactions. Updating a row creates a new copy of the row and updates the previous row so that it's not visible for future transactions.
 
 ## VACUUM
-Because of how MVCC is implemented, tuples that are updated & deleted in a table are not physically deleted from their table. This results in increase in size of tables if vacuum is not run frequently on that table. To handle this increasing storage, you can run `VACUUM` manually or make sure `autovacuum` is running. `VACUUM` goes through each table and marks the older versions of tuples for deletion. `VACUUM` doesn't free up disk space, but can be reused for future inserts on this table. To free up disk space and completely remove bloat from that table, you can run `VACUUM FULL` but it takes an exclusive lock on the table.
+Because of how MVCC is implemented, tuples that are updated & deleted in a table are not physically deleted from their table. This increases the size of tables if `VACUUM` is not run frequently on that table. To handle this increasing storage, you can run `VACUUM` manually or make sure `autovacuum` is running. `VACUUM` goes through each table and marks the older versions of tuples for deletion. `VACUUM` doesn't free up disk space, but can be reused for future inserts on this table. To free up disk space and completely remove bloat from that table, you can run `VACUUM FULL` but it takes an exclusive lock on the table.
 
-> Its not recommended to run `VACUUM FULL` on a production database.
+> It's not recommended to run `VACUUM FULL` on a production database.
 
 ### MVCC Exercise
-1. Create an empty table
+1. Create an empty table.
 ```sql
 CREATE TABLE tbl (id bigserial primary key, col text);
 ```
-2. Insert two rows and check their physical location
+2. Insert two rows and check their physical location.
 ```sql
 INSERT INTO tbl(col) VALUES ('a'), ('b');
 SELECT ctid, * FROM tbl;
 ```
-3. Delete the row where col value is `a` and check their physical location
+3. Delete the row where col value is `a` and check their physical location.
 ```sql
 DELETE FROM tbl WHERE col = 'a';
 SELECT ctid, * FROM tbl;
 ```
-4. Update the row where col value is `b` and check their physical location
+4. Update the row where col value is `b` and check their physical location.
 ```sql
 UPDATE tbl SET col = 'c' WHERE col = 'b';
 SELECT ctid, * FROM tbl;
 ```
-You will notice that physical location of that row has now changed.
+You will notice that the physical location of that row has now changed.
 
-5. Run VACUUM FULL and check physical location of rows
+5. Run VACUUM FULL and check physical location of rows.
 ```sql
 VACUUM FULL tbl;
 SELECT ctid, * FROM tbl;
 ```
-You will notice that physical location has changed again after running vacuum.
+You will notice that the physical location has changed again after running `VACUUM FULL`.
 
 ## Additional Resources
 * MVCC Unmasked by Bruce Momjian - [Slides](https://momjian.us/main/writings/pgsql/mvcc.pdf) | [Video](https://www.youtube.com/watch?v=gAE_MSQtqnQ)
 * Postgres, MVCC, and you or, Why COUNT(*) is slow by David Wolever - [Slides](https://speakerdeck.com/wolever/pycon-canada-2017-postgres-mvcc-and-you) | [Video](https://www.youtube.com/watch?v=GtQueJe6xRQ)
 
-# psql & Query Optimisation
+# psql
+psql is the official CLI shipped with PostgreSQL. It's good to know how to move around a database, especially during an incident and psql is a perfect tool for that. Check this [cheat sheet](./psql-cheat-sheet.md) to get familiar with psql.
 
-## psql
-psql is the official CLI shipped with postgresql. Its really important to know how to move around a database and psql is a perfect tool for that. Check this [cheat sheet](./psql-cheat-sheet.md) to get familiar with psql.
-
-## Query Optimisation
-Its really important to fix the slow and poorly written queries. To identify bottlenecks in query executions, `EXPLAIN` & `EXPLAIN ANALYZE` are quite useful. Check [this](./sql-query-analysis.md) to get an idea of how queries get executed. After identifying the issues, you can create an index, rewrite query or provision more resources depending on the use case.
+# Query Optimisation
+To fix the slow and poorly written queries to ensure optimal performance for your database, `EXPLAIN` and `EXPLAIN ANALYZE` are used to identify bottlenecks in query execution. Check [this](./sql-query-analysis.md) to get an idea of how queries get executed. After identifying the issue, you can create an index, rewrite the query, or add more resources depending on the use case.
 
 # Monitoring, Observability & Reporting
 
 ## Opensource monitoring tools
-You can setup one of these tools to get better visiblity into your database:
+You can set up one of these tools to get better visibility into your database:
 * [pgwatch](https://pgwatch.com/)
 * [pgMonitor](https://github.com/CrunchyData/pgmonitor)
 * [Percona Monitoring and Management](https://www.percona.com/doc/percona-monitoring-and-management/)
 
-You can also setup [pgbadger](https://github.com/darold/pgbadger), a tool which parses logs and generates a report on database usage and workload. You can use this to find out slow queries that need fixing or tune postgresql parameters for your workload. Since pgbgadger works on logs, you won't get a realtime view of your database instance.
+You can also set up [pgbadger](https://github.com/darold/pgbadger), a tool that parses logs and generates a report on database usage and workload. You can use this to find out slow queries that need fixing or tune postgresql parameters for your workload. Since pgbgadger works on logs, you won't get a real-time view of your database instance.
 
 ## System metrics
 There are a lot of metrics you might want to track, but these are one of the most important ones
@@ -104,14 +102,14 @@ There are a lot of metrics you might want to track, but these are one of the mos
 
 ## Performance Insights in [AWS RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PerfInsights.html)
 
-This is a feature of RDS which shows you running queries in real time.
+Performance Insights is a feature of RDS which shows you running queries in real-time.
 
 # Index Types
-Most of the times, the performance problems in a database are due to a missing index. There are different types of indexes avaialble and some might give good performance gains depending on the use-case. By default, postgres uses a btree index.
+Most of the time, the performance problems in a database are due to a missing index. There are different types of indexes available. And some might give good performance gains depending on the use case. By default, postgres creates a B-Tree index.
 
 While creating an index, I try to follow these rules:
- * Don't create an index if you know its not going be used. Unnecessary indexes will slow down your writes.
- * `Multi-column indexes`: If your queries have multiple conditions, a [multi-column index](https://www.postgresql.org/docs/current/indexes-multicolumn.html) might be useful. The order of columns is really important here. Let's assume you have a table with the below structure with a btree index on (col1, col2).
+ * Don't create an index if it's not going to be used. Unnecessary indexes will slow down your writes.
+ * `Multi-column indexes`: If your queries have multiple conditions, a [multi-column index](https://www.postgresql.org/docs/current/indexes-multicolumn.html) can help. The order of columns is matters here. Let's assume you have a table with the below structure with a B-Tree index on (col1, col2).
  ```sql
                            Table "public.tbl1"
  Column |  Type   | Collation | Nullable |             Default
@@ -126,15 +124,15 @@ If you make a query like:
    * `SELECT * FROM tbl1 WHERE col1 = 10 AND col2 = 20` - Index scan
    * `SELECT * FROM tbl1 WHERE col1 = 10` - Index scan
    * `SELECT * FROM tbl1 WHERE col2 = 20` - Sequential scan. Depends on the data distribution and the `WHERE` clause.
- * `Partial indexes`: If you know that a part of the `WHERE` clause would have a fixed condition. e.g. `WHERE active = TRUE AND col1 = ?` where `active = TRUE` is the only condition on `active` column in your queries, you can create a [partial index](https://www.postgresql.org/docs/current/indexes-partial.html). Partial indexes are smaller in size and are more performant as well.
- * Indexes on expressions: You can create an index on an expression as well (e.g. `lower(textcol1)`). If queries on a table has some expressions, it it's a good idea to create an index on that expression.
+ * *Partial indexes*: If you know that a part of the `WHERE` clause would have a fixed condition. e.g. `WHERE active = TRUE AND col1 = ?` where `active = TRUE` is the only condition on the `active` column in your queries, you can create a [partial index](https://www.postgresql.org/docs/current/indexes-partial.html). Partial indexes are smaller in size and are more performant as well.
+ * *Indexes on expressions*: You can create an index on an expression as well (e.g. `lower(textcol1)`). If queries on a table have some expressions, it's a good idea to create an index on that expression.
 
 ## Additional Resources
 * [Index Types](https://www.postgresql.org/docs/current/indexes-types.html)
 * [Get rid of your unused indexes!](https://www.cybertec-postgresql.com/en/get-rid-of-your-unused-indexes/)
 
 # Identifying ongoing issues
-Run [queries/connections_per_user.sql](queries/connections_per_user.sql) and check if `max_running_time` is high for `state` - `active` and `idle in transaction`. There is a problem if number of connections or `max_running_time` for queries in `active` or `idle in transaction` state is high. `high` is subjective here and depends on the database size and type of workload. In my experience, number of `active` connections should be less than number of database's cpu cores and `max_running_time` should be less than 1 second.
+Run [queries/connections_per_user.sql](queries/connections_per_user.sql) and check if `max_running_time` is high for `state` - `active` and `idle in transaction`. There is a problem if the number of connections or `max_running_time` for queries in `active` or `idle in transaction` state is high. `high` is subjective here and depends on the database size and type of workload. In my experience, number of `active` connections should be less than number of database's cpu cores and `max_running_time` should be less than 1 second.
  * If time for `idle in transaction` queries is high, then
     * either your application is taking time to commit transactions because its under heavy load or is doing some time consuming task before committing. Or application is not handling transactions properly.
     * some dev started a transaction and didn't commit it and left the connection open
